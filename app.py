@@ -5,7 +5,7 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
-HF_TOKEN = "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"
+HF_TOKEN = "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"
 MODEL = "tiiuae/falcon-7b-instruct"  # стабильная модель
 
 @app.route('/api/chat', methods=['POST'])
