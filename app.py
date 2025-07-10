@@ -1,11 +1,20 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
+from cryptography.fernet import Fernet
 
 app = Flask(__name__)
 CORS(app)
 
-HF_TOKEN = "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"
+# Ваш ключ и зашифрованный токен
+key_str = "mMVhYfzITdAWDzwwts5Mgpf1ls_FNAfdDCtsuxsUkfI="
+encrypted_token_str = "gAAAAABob8xh3ZdCXPRcH4EpdrMOZKbP19qjYcREtRVEgtgM3n1salesYTILG9_HkW7qBhGjKIQAmDjyUD8ypexUcwqs7lbtpvx2oIBsNqhl_bNOVndYzf_bGaIRIRxwqY44k-llVCoH"
+
+# Расшифровка токена
+cipher = Fernet(key_str.encode())
+decrypted_token = cipher.decrypt(encrypted_token_str.encode())
+HF_TOKEN = decrypted_token.decode()
+
 MODEL = "tiiuae/falcon-7b-instruct"  # стабильная модель
 
 @app.route('/api/chat', methods=['POST'])
@@ -13,7 +22,6 @@ def chat():
     data = request.json
     messages = data.get("messages", [])
 
-    # Сборка диалога
     prompt = (
         "Ты — Фелис, ИИ-помощник компании ЦАИТО МУИТ. "
         "Отвечай на русском языке, дружелюбно, кратко и по делу.\n"
@@ -33,7 +41,6 @@ def chat():
 
         result = response.json()
 
-        # Проверка: правильный ли ответ
         if isinstance(result, list) and "generated_text" in result[0]:
             full_text = result[0]["generated_text"]
             answer = full_text.split("Фелис:")[-1].strip()
