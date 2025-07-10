@@ -5,28 +5,23 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
-# Вставьте свой токен Hugging Face сюда
 HF_TOKEN = "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"
-
-# Используем модель Mistral (или другую — можно заменить)
-MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
+MODEL = "tiiuae/falcon-7b-instruct"  # стабильная модель
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
     data = request.json
     messages = data.get("messages", [])
 
-    # Собираем промпт
+    # Сборка диалога
     prompt = (
         "Ты — Фелис, ИИ-помощник компании ЦАИТО МУИТ. "
-        "Отвечай на русском языке, кратко, дружелюбно и по делу. "
-        "Не выдумывай фактов. Ты создана командой ЦАИТО МУИТ. "
+        "Отвечай на русском языке, дружелюбно, кратко и по делу.\n"
     )
-
     for msg in messages:
         role = "Пользователь" if msg["speaker"] == "user" else "Фелис"
-        prompt += f"\n{role}: {msg['text']}"
-    prompt += "\nФелис:"
+        prompt += f"{role}: {msg['text']}\n"
+    prompt += "Фелис:"
 
     try:
         response = requests.post(
@@ -37,14 +32,18 @@ def chat():
         )
 
         result = response.json()
-        if isinstance(result, list):
-            text = result[0].get("generated_text", "")
-            answer = text.split("Фелис:")[-1].strip()
+
+        # Проверка: правильный ли ответ
+        if isinstance(result, list) and "generated_text" in result[0]:
+            full_text = result[0]["generated_text"]
+            answer = full_text.split("Фелис:")[-1].strip()
+        elif isinstance(result, dict) and "error" in result:
+            answer = f"Ошибка Hugging Face: {result['error']}"
         else:
-            answer = "Ошибка: ответ от модели не в нужном формате."
+            answer = "Не удалось распознать ответ модели."
 
     except Exception as e:
-        answer = f"Ошибка при подключении: {e}"
+        answer = f"Ошибка при запросе: {e}"
 
     return jsonify({"response": answer})
 
